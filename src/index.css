@@ -1,0 +1,275 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CRM Design System - Professional Blue Theme */
+
+@layer base {
+  :root {
+    /* Core Colors - Professional CRM Blue Theme */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* CRM Primary - Azure Blue */
+    --primary: 210 91% 53%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 210 91% 65%;
+    --primary-dark: 210 91% 43%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    /* Status Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 210 91% 53%;
+
+    --radius: 0.75rem;
+
+    /* CRM Specific */
+    --sidebar-bg: 220 14% 96%;
+    --sidebar-active: 210 91% 53%;
+    --lead-new: 210 91% 53%;
+    --lead-prospect: 38 92% 50%;
+    --lead-negotiation: 142 76% 36%;
+    --lead-won: 120 61% 50%;
+    --lead-lost: 0 84% 60%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 91% 53%), hsl(210 91% 43%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(210 91% 53% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(210 91% 53% / 0.1), 0 2px 4px -1px hsl(210 91% 53% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(210 91% 53% / 0.1), 0 4px 6px -2px hsl(210 91% 53% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(210 91% 53% / 0.1), 0 10px 10px -5px hsl(210 91% 53% / 0.04);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Core Colors - Dark Theme */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary stays bright in dark mode */
+    --primary: 210 91% 63%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 210 91% 75%;
+    --primary-dark: 210 91% 53%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 210 91% 63%;
+
+    /* CRM Specific Dark */
+    --sidebar-bg: 220 14% 8%;
+    --sidebar-active: 210 91% 63%;
+    --lead-new: 210 91% 63%;
+    --lead-prospect: 38 92% 60%;
+    --lead-negotiation: 142 76% 46%;
+    --lead-won: 120 61% 60%;
+    --lead-lost: 0 84% 70%;
+
+    /* Dark Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 91% 63%), hsl(210 91% 53%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 46%), hsl(142 76% 56%));
+    --gradient-card: linear-gradient(135deg, hsl(222.2 84% 4.9%), hsl(217.2 32.6% 17.5%));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    transition: var(--transition-smooth);
+  }
+}
+
+@layer components {
+  /* CRM Button Variants */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-primary-foreground font-medium px-4 py-2 rounded-lg transition-all duration-200 hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+
+  /* Status Badges */
+  .badge-success {
+    @apply bg-success text-success-foreground px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-warning {
+    @apply bg-warning text-warning-foreground px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-destructive {
+    @apply bg-destructive text-destructive-foreground px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* CRM Card Styles */
+  .crm-card {
+    @apply bg-card text-card-foreground border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-all duration-200;
+  }
+
+  .crm-card-header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  /* Lead Status Colors */
+  .lead-new {
+    @apply border-l-4 border-lead-new;
+  }
+
+  .lead-prospect {
+    @apply border-l-4 border-lead-prospect;
+  }
+
+  .lead-negotiation {
+    @apply border-l-4 border-lead-negotiation;
+  }
+
+  .lead-won {
+    @apply border-l-4 border-lead-won;
+  }
+
+  .lead-lost {
+    @apply border-l-4 border-lead-lost;
+  }
+
+  /* Sidebar Styles */
+  .sidebar-nav {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 cursor-pointer;
+  }
+
+  .sidebar-nav.active {
+    @apply bg-primary text-primary-foreground hover:bg-primary-dark hover:text-primary-foreground;
+  }
+
+  /* Quick Action Grid */
+  .quick-action-grid {
+    @apply grid grid-cols-3 gap-2 p-4 w-64;
+  }
+
+  .quick-action-item {
+    @apply flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-accent transition-all duration-200 cursor-pointer;
+  }
+
+  .quick-action-item:hover .quick-action-icon {
+    @apply text-primary;
+  }
+
+  /* Animation Classes */
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
