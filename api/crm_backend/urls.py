@@ -22,8 +22,11 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from .health import health_check
 
 urlpatterns = [
+    # Health check
+    path("health", health_check, name="health_check"),
     # Admin
     path("admin/", admin.site.urls),
     # API Documentation

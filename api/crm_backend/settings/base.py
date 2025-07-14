@@ -67,25 +67,47 @@ WSGI_APPLICATION = "crm_backend.wsgi.application"
 ASGI_APPLICATION = "crm_backend.asgi.application"
 
 # Database configuration
-# Using SQLite for now; will switch to PostgreSQL in Docker setup
-DATABASES = {
+# Database configuration
+# Supports DATABASE_URL or individual env vars
+import dj_database_url
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    # Use DATABASE_URL if provided (Docker/production)
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    # Fallback to SQLite for local development
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+# Cache configuration (Redis)
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+CACHES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+        },
+        "KEY_PREFIX": "crm",
     }
 }
 
-# Uncomment for PostgreSQL (will be used with Docker)
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": os.getenv("DB_NAME", "crm"),
-#         "USER": os.getenv("DB_USER", "app"),
-#         "PASSWORD": os.getenv("DB_PASSWORD", "app"),
-#         "HOST": os.getenv("DB_HOST", "localhost"),
-#         "PORT": os.getenv("DB_PORT", "5432"),
-#     }
-# }
+# Session configuration (use Redis for sessions in production)
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 # Custom User Model
 AUTH_USER_MODEL = "users.User"

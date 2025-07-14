@@ -60,4 +60,7 @@ ENV/
 *.sql
 
 # Docker
-.dockerignore
+# .dockerignore is tracked, but ignore Docker volumes and logs
+docker-compose.override.yml
+*.tar
+*.log
