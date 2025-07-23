@@ -1,6 +1,5 @@
-"""
-Base Django settings for crm_backend project.
-"""
+"""Base Django settings for crm_backend project."""
+
 
 import os
 from pathlib import Path
@@ -16,6 +15,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-this-in-production")
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv("DEBUG", "False") == "True"
+
+# ALLOWED_HOSTS Configuration
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -27,6 +32,7 @@ INSTALLED_APPS = [
     # Third-party apps
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     "django_filters",
@@ -36,6 +42,9 @@ INSTALLED_APPS = [
     "contacts",
     "leads",
     "activities",
+    "products",
+    "quote_items",
+    "reference_data",
 ]
 
 MIDDLEWARE = [
@@ -70,7 +79,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "crm_backend.wsgi.application"
 ASGI_APPLICATION = "crm_backend.asgi.application"
 
-# Database configuration
 # Database configuration
 # Supports DATABASE_URL or individual env vars
 import dj_database_url
