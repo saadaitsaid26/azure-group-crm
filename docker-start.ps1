@@ -11,14 +11,14 @@ try {
     docker info > $null 2>&1
     if ($LASTEXITCODE -eq 0) {
         $dockerRunning = $true
-        Write-Host "✓ Docker is running" -ForegroundColor Green
+        Write-Host "OK Docker is running" -ForegroundColor Green
     }
 } catch {
     $dockerRunning = $false
 }
 
 if (-not $dockerRunning) {
-    Write-Host "✗ Docker is not running!" -ForegroundColor Red
+    Write-Host "ERROR Docker is not running!" -ForegroundColor Red
     Write-Host "Please start Docker Desktop and try again." -ForegroundColor Red
     exit 1
 }
@@ -29,29 +29,30 @@ Write-Host "Setting up environment files..." -ForegroundColor Yellow
 
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
-    Write-Host "✓ Created .env from .env.example" -ForegroundColor Green
+    Write-Host "OK Created .env from .env.example" -ForegroundColor Green
 } else {
-    Write-Host "✓ .env already exists" -ForegroundColor Green
+    Write-Host "OK .env already exists" -ForegroundColor Green
 }
 
 if (-not (Test-Path "api\.env")) {
     Copy-Item "api\.env.example" "api\.env"
-    Write-Host "✓ Created api\.env from api\.env.example" -ForegroundColor Green
+    Write-Host "OK Created api\.env from api\.env.example" -ForegroundColor Green
 } else {
-    Write-Host "✓ api\.env already exists" -ForegroundColor Green
+    Write-Host "OK api\.env already exists" -ForegroundColor Green
 }
 
 # Build containers
 Write-Host ""
 Write-Host "Building Docker containers..." -ForegroundColor Yellow
+Write-Host "This may take several minutes on first run..." -ForegroundColor Gray
 docker-compose build
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "✗ Build failed!" -ForegroundColor Red
+    Write-Host "ERROR Build failed!" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✓ Build successful" -ForegroundColor Green
+Write-Host "OK Build successful" -ForegroundColor Green
 
 # Start containers
 Write-Host ""
@@ -59,16 +60,16 @@ Write-Host "Starting containers..." -ForegroundColor Yellow
 docker-compose up -d
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "✗ Failed to start containers!" -ForegroundColor Red
+    Write-Host "ERROR Failed to start containers!" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✓ Containers started" -ForegroundColor Green
+Write-Host "OK Containers started" -ForegroundColor Green
 
 # Wait for services to be healthy
 Write-Host ""
 Write-Host "Waiting for services to be ready..." -ForegroundColor Yellow
-Start-Sleep -Seconds 10
+Start-Sleep -Seconds 15
 
 # Show status
 Write-Host ""
@@ -94,7 +95,7 @@ Write-Host "Stop services:     docker-compose down" -ForegroundColor White
 Write-Host "Restart service:   docker-compose restart api" -ForegroundColor White
 Write-Host "Run tests:         docker-compose exec api pytest -v" -ForegroundColor White
 Write-Host ""
-Write-Host "✓ Setup complete! Your development environment is ready." -ForegroundColor Green
+Write-Host "SUCCESS Setup complete! Your development environment is ready." -ForegroundColor Green
 Write-Host ""
 
 # Ask if user wants to view logs
