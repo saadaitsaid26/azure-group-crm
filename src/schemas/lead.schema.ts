@@ -1,15 +1,40 @@
 import { z } from "zod";
 
-export const leadSchema = z.object({
-  title: z.string().min(1, "Title is required").max(100),
-  company: z.string().min(1, "Company is required").max(100),
-  contactName: z.string().min(1, "Contact name is required").max(100),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(1, "Phone is required"),
-  value: z.coerce.number().min(0, "Value must be positive"),
-  priority: z.enum(["high", "medium", "low"]),
-  stage: z.enum(["new", "followUp", "prospect", "negotiation", "won", "lost"]),
+// Lead schema for forms (creating/updating)
+export const leadFormSchema = z.object({
+  organization: z.string().uuid().optional().nullable(),
+  contact: z.string().uuid().optional().nullable(),
+  owner: z.string().uuid().optional().nullable(),
+  title: z.string().min(1, "Title is required").max(200),
+  value: z.coerce.number().min(0, "Value must be non-negative").optional().nullable(),
+  priority: z.enum(["high", "medium", "low"]).default("medium"),
+  stage: z.enum(["new", "followUp", "prospect", "negotiation", "won", "lost"]).default("new"),
+  source: z.string().max(100).optional(),
   notes: z.string().optional(),
 });
 
-export type LeadFormData = z.infer<typeof leadSchema>;
+export type LeadFormData = z.infer<typeof leadFormSchema>;
+
+// Lead type from API (includes read-only fields)
+export interface Lead {
+  id: string;
+  organization: string | null;
+  organization_name: string | null;
+  contact: string | null;
+  contact_name: string | null;
+  owner: string | null;
+  owner_name: string | null;
+  title: string;
+  value: string | null;
+  priority: "high" | "medium" | "low";
+  stage: "new" | "followUp" | "prospect" | "negotiation" | "won" | "lost";
+  source: string;
+  notes: string;
+  activities_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// For backward compatibility
+export const leadSchema = leadFormSchema;
+
