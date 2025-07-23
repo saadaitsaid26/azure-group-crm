@@ -1,27 +1,13 @@
 import { toast } from "@/hooks/use-toast";
 
-const API_BASE_URL = "/api"; // Will be configured for backend
+// Use environment variable for API URL, fallback to default
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
 
 class ApiClient {
   private baseURL: string;
-  private token: string | null = null;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.token = localStorage.getItem("auth_token");
-  }
-
-  setToken(token: string | null) {
-    this.token = token;
-    if (token) {
-      localStorage.setItem("auth_token", token);
-    } else {
-      localStorage.removeItem("auth_token");
-    }
-  }
-
-  getToken() {
-    return this.token;
   }
 
   private async request<T>(
@@ -33,24 +19,24 @@ class ApiClient {
       ...options.headers,
     };
 
-    if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
-    }
-
     try {
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         ...options,
         headers,
+        credentials: "include", // Include cookies in requests
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          this.setToken(null);
-          window.location.href = "/login";
+          // Unauthorized - redirect to login
+          // Don't redirect if already on login page to avoid infinite loop
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
           throw new Error("Unauthorized");
         }
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || "API request failed");
+        throw new Error(error.message || error.detail || "API request failed");
       }
 
       return await response.json();

@@ -30,39 +30,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = apiClient.getToken();
-    if (token) {
-      // Validate token and fetch user data
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
+    // On mount, try to fetch user data (cookies will be sent automatically)
+    fetchUser();
   }, []);
 
   const fetchUser = async () => {
     try {
-      // Backend will return user data based on token
+      // Backend will validate the httpOnly cookie and return user data
       const userData = await apiClient.get<User>("/auth/me");
       setUser(userData);
     } catch (error) {
-      apiClient.setToken(null);
+      // User is not authenticated or session expired
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
-    const response = await apiClient.post<{ token: string; user: User }>(
+    // Backend will set httpOnly cookie on successful login
+    const response = await apiClient.post<{ user: User }>(
       "/auth/login",
       { email, password }
     );
-    apiClient.setToken(response.token);
     setUser(response.user);
   };
 
-  const logout = () => {
-    apiClient.setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      // Call backend logout to clear the httpOnly cookie
+      await apiClient.post("/auth/logout");
+    } catch (error) {
+      // Even if logout fails, clear local user state
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      // Redirect to login page
+      window.location.href = "/login";
+    }
   };
 
   return (
