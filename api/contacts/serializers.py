@@ -41,7 +41,20 @@ class ContactSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         """Cross-field validation."""
+        # Get current values, considering this might be a partial update
+        email = data.get('email')
+        phone = data.get('phone')
+        
+        # For updates, check existing instance values if field not in data
+        if self.instance:
+            if 'email' not in data:
+                email = self.instance.email
+            if 'phone' not in data:
+                phone = self.instance.phone
+        
         # Ensure at least email or phone is provided
-        if not data.get('email') and not data.get('phone'):
-            raise serializers.ValidationError("At least one of email or phone must be provided.")
+        if not email and not phone:
+            raise serializers.ValidationError(
+                "At least one of email or phone must be provided."
+            )
         return data

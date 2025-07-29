@@ -24,7 +24,7 @@ class Contact(models.Model):
     )
     first_name = models.CharField(max_length=50, db_index=True)
     last_name = models.CharField(max_length=50, db_index=True)
-    email = models.EmailField(validators=[EmailValidator()], db_index=True)
+    email = models.EmailField(validators=[EmailValidator()], db_index=True, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True)
     role = models.CharField(max_length=100, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', db_index=True)
