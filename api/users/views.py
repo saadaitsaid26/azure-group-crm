@@ -4,13 +4,17 @@ Authentication views for cookie-based JWT authentication.
 
 from django.contrib.auth import authenticate
 from django.conf import settings
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from django.db import models
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes, throttle_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import LoginSerializer, UserSerializer
+from django_filters import rest_framework as filters
+from .models import User
+from .serializers import LoginSerializer, UserSerializer, UserCreateSerializer
+from .permissions import IsAdminUser
 
 
 class LoginThrottle(AnonRateThrottle):
@@ -193,3 +197,65 @@ def logout_view(request):
     )
 
     return response
+
+
+class UserFilter(filters.FilterSet):
+    """Filter for User model."""
+
+    q = filters.CharFilter(method="filter_search")
+    role = filters.ChoiceFilter(choices=User.ROLE_CHOICES)
+    is_active = filters.BooleanFilter()
+
+    class Meta:
+        model = User
+        fields = ["role", "is_active", "q"]
+
+    def filter_search(self, queryset, name, value):
+        """Search across email, first_name, last_name."""
+        from django.db.models import Q
+        return queryset.filter(
+            Q(email__icontains=value) |
+            Q(first_name__icontains=value) |
+            Q(last_name__icontains=value)
+        )
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing users (Admin only).
+    """
+
+    queryset = User.objects.all()
+    permission_classes = [IsAdminUser]
+    filterset_class = UserFilter
+    ordering_fields = ["email", "first_name", "last_name", "role", "created_at"]
+    ordering = ["-created_at"]
+
+    def get_serializer_class(self):
+        """Return appropriate serializer class."""
+        if self.action == "create":
+            return UserCreateSerializer
+        return UserSerializer
+
+    @action(detail=False, methods=["get"])
+    def stats(self, request):
+        """Get user statistics."""
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        total = queryset.count()
+        admin_count = queryset.filter(role="admin").count()
+        user_count = queryset.filter(role="user").count()
+        active_count = queryset.filter(is_active=True).count()
+        inactive_count = queryset.filter(is_active=False).count()
+
+        return Response({
+            "total": total,
+            "by_role": {
+                "admin": admin_count,
+                "user": user_count,
+            },
+            "by_status": {
+                "active": active_count,
+                "inactive": inactive_count,
+            },
+        })

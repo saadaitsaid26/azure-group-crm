@@ -53,15 +53,6 @@ class LeadSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         """Cross-field validation."""
-        # Ensure stage transitions make sense
-        if self.instance:
-            old_stage = self.instance.stage
-            new_stage = data.get('stage', old_stage)
-            
-            # Prevent moving from won/lost back to active stages
-            if old_stage in ['won', 'lost'] and new_stage not in ['won', 'lost']:
-                raise serializers.ValidationError({
-                    'stage': 'Cannot reopen a won or lost lead. Create a new lead instead.'
-                })
-        
+        # Note: Removed strict stage transition validation to allow flexible lead management
+        # Users can move leads between any stages as needed
         return data
