@@ -37,6 +37,15 @@ export interface ContactFilters {
   ordering?: string;
 }
 
+export interface ContactStats {
+  total: number;
+  by_status: {
+    active: number;
+    lead: number;
+    inactive: number;
+  };
+}
+
 // Query Keys
 export const contactKeys = {
   all: ['contacts'] as const,
@@ -83,7 +92,7 @@ const deleteContact = async (id: string): Promise<void> => {
   return apiClient.delete(`/contacts/${id}/`);
 };
 
-const fetchContactStats = async () => {
+const fetchContactStats = async (): Promise<ContactStats> => {
   return apiClient.get('/contacts/stats/');
 };
 
