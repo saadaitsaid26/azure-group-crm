@@ -29,23 +29,56 @@ class ApiClient {
       if (!response.ok) {
         if (response.status === 401) {
           // Unauthorized - redirect to login
-          // Don't redirect if already on login page to avoid infinite loop
-          if (window.location.pathname !== "/login") {
+          // Don't redirect if already on login page or if checking auth status
+          if (window.location.pathname !== "/login" && endpoint !== "/auth/me") {
             window.location.href = "/login";
           }
-          throw new Error("Unauthorized");
+          const error = new Error("Unauthorized");
+          // Mark the error as an auth check so we can suppress console logging
+          (error as any).isAuthCheck = endpoint === "/auth/me";
+          throw error;
         }
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || error.detail || "API request failed");
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Handle different error response formats from Django REST Framework
+        let errorMessage = "API request failed";
+        
+        if (errorData.detail) {
+          // Single detail message
+          errorMessage = errorData.detail;
+        } else if (errorData.message) {
+          // Custom message field
+          errorMessage = errorData.message;
+        } else if (typeof errorData === 'object' && Object.keys(errorData).length > 0) {
+          // Field-specific errors (e.g., {"stage": ["Cannot reopen a won or lost lead."]})
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, errors]) => {
+              if (Array.isArray(errors)) {
+                return `${field}: ${errors.join(', ')}`;
+              }
+              return `${field}: ${errors}`;
+            })
+            .join('; ');
+          errorMessage = fieldErrors || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return await response.json();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
+      // Don't show toast for 401 on /auth/me (initial auth check)
+      const isAuthCheckError = error instanceof Error && 
+                               error.message === "Unauthorized" && 
+                               (error as any).isAuthCheck;
+      
+      if (!isAuthCheckError) {
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "An error occurred",
+          variant: "destructive",
+        });
+      }
       throw error;
     }
   }
