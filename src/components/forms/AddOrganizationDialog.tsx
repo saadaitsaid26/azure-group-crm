@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,11 @@ export default function AddOrganizationDialog({ open, onOpenChange, onSuccess }:
       await createMutation.mutateAsync(data);
       toast({ title: "Success", description: "Organization created successfully" });
       reset();
+      // Ensure focus is cleared before closing to avoid aria-hidden warning during close animation
+      if (typeof document !== "undefined") {
+        const el = document.activeElement as HTMLElement | null;
+        el?.blur();
+      }
       onOpenChange(false);
       onSuccess();
     } catch (error) {
@@ -50,7 +55,11 @@ export default function AddOrganizationDialog({ open, onOpenChange, onSuccess }:
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Organization</DialogTitle>
+          <DialogDescription>
+            Fill out the organization details. Required fields are marked with *.
+          </DialogDescription>
         </DialogHeader>
+  {/* The dialog is controlled via onOpenChange; no hidden Close button needed */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Organization Name *</Label>
@@ -126,9 +135,11 @@ export default function AddOrganizationDialog({ open, onOpenChange, onSuccess }:
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={createMutation.isPending}>
-              Cancel
-            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={createMutation.isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={createMutation.isPending}>
               {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {createMutation.isPending ? "Creating..." : "Create Organization"}
