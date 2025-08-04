@@ -1,61 +1,134 @@
-import { DollarSign, Target, Users, TrendingUp, Award, Package } from "lucide-react";
+import {
+  DollarSign,
+  Target,
+  Users,
+  TrendingUp,
+  Award,
+  Package,
+  Loader2,
+} from "lucide-react";
 import KPICard from "@/components/dashboard/KPICard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-// Empty data - ready for backend integration
-const kpiData = [
-  {
-    title: "Total Revenue",
-    value: "$0",
-    change: "0%",
-    changeType: "positive" as const,
-    icon: <DollarSign className="w-5 h-5 text-primary" />,
-    description: "vs last month"
-  },
-  {
-    title: "Active Leads",
-    value: "0",
-    change: "0%",
-    changeType: "positive" as const,
-    icon: <Target className="w-5 h-5 text-primary" />,
-    description: "this month"
-  },
-  {
-    title: "New Contacts",
-    value: "0",
-    change: "0%",
-    changeType: "positive" as const,
-    icon: <Users className="w-5 h-5 text-primary" />,
-    description: "vs last month"
-  },
-  {
-    title: "Conversion Rate",
-    value: "0%",
-    change: "0%",
-    changeType: "positive" as const,
-    icon: <TrendingUp className="w-5 h-5 text-primary" />,
-    description: "overall"
-  }
-];
-
-const recentLeads: any[] = [];
-
-const topPerformers: any[] = [];
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useDashboardStats } from "@/api/dashboard";
 
 export default function Dashboard() {
+  const { data: dashboardData, isLoading, error } = useDashboardStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
+          <p className="text-destructive">Failed to load dashboard data</p>
+        </div>
+      </div>
+    );
+  }
+
+  const kpiData = dashboardData
+    ? [
+        {
+          title: "Total Revenue",
+          value: `$${dashboardData.kpis.total_revenue.value.toLocaleString()}`,
+          change: `${dashboardData.kpis.total_revenue.change >= 0 ? "+" : ""}${
+            dashboardData.kpis.total_revenue.change
+          }%`,
+          changeType:
+            dashboardData.kpis.total_revenue.change >= 0
+              ? ("positive" as const)
+              : ("negative" as const),
+          icon: <DollarSign className="w-5 h-5 text-primary" />,
+          description: "vs last month",
+        },
+        {
+          title: "Active Leads",
+          value: dashboardData.kpis.active_leads.value.toString(),
+          change: `${dashboardData.kpis.active_leads.change >= 0 ? "+" : ""}${
+            dashboardData.kpis.active_leads.change
+          }%`,
+          changeType:
+            dashboardData.kpis.active_leads.change >= 0
+              ? ("positive" as const)
+              : ("negative" as const),
+          icon: <Target className="w-5 h-5 text-primary" />,
+          description: "this month",
+        },
+        {
+          title: "Total Contacts",
+          value: dashboardData.kpis.total_contacts.value.toString(),
+          change: `${dashboardData.kpis.total_contacts.change >= 0 ? "+" : ""}${
+            dashboardData.kpis.total_contacts.change
+          }%`,
+          changeType:
+            dashboardData.kpis.total_contacts.change >= 0
+              ? ("positive" as const)
+              : ("negative" as const),
+          icon: <Users className="w-5 h-5 text-primary" />,
+          description: "vs last month",
+        },
+        {
+          title: "Conversion Rate",
+          value: `${dashboardData.kpis.conversion_rate.value}%`,
+          change: `${
+            dashboardData.kpis.conversion_rate.change >= 0 ? "+" : ""
+          }${dashboardData.kpis.conversion_rate.change}%`,
+          changeType:
+            dashboardData.kpis.conversion_rate.change >= 0
+              ? ("positive" as const)
+              : ("negative" as const),
+          icon: <TrendingUp className="w-5 h-5 text-primary" />,
+          description: "overall",
+        },
+      ]
+    : [];
+
+  const recentActivities = dashboardData?.recent_activities || [];
+  const leadsByStage = dashboardData?.leads_by_stage || [];
+
+  // Map stage names from backend to display format
+  const stageColorMap: Record<string, string> = {
+    new: "bg-blue-500",
+    followUp: "bg-purple-500",
+    prospect: "bg-yellow-500",
+    negotiation: "bg-orange-500",
+    won: "bg-green-500",
+    lost: "bg-red-500",
+  };
+
+  const stageDisplayMap: Record<string, string> = {
+    new: "New",
+    followUp: "Follow Up",
+    prospect: "Prospect",
+    negotiation: "Negotiation",
+    won: "Won",
+    lost: "Lost",
+  };
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your CRM overview.</p>
+          <p className="text-muted-foreground">
+            Welcome back! Here's your CRM overview.
+          </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
-            Export Report
-          </Button>
+          <Button variant="outline">Export Report</Button>
           <Button className="bg-gradient-primary hover:opacity-90">
             View Analytics
           </Button>
@@ -71,79 +144,79 @@ export default function Dashboard() {
 
       {/* Charts and Recent Activity */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Recent Leads */}
+        {/* Recent Activities */}
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5 text-primary" />
-              Recent Leads
+              Recent Activities
             </CardTitle>
-            <CardDescription>Latest leads in your pipeline</CardDescription>
+            <CardDescription>Latest activities in your CRM</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-primary font-semibold text-sm">
-                        {lead.name.charAt(0)}
+              {recentActivities.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  No recent activities
+                </p>
+              ) : (
+                recentActivities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary font-semibold text-sm">
+                          {activity.type.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {activity.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {activity.lead_title ||
+                            activity.contact_name ||
+                            "No contact"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          activity.is_done
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {activity.is_done ? "Done" : "Pending"}
                       </span>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{lead.name}</p>
-                      <p className="text-sm text-muted-foreground">{lead.contact}</p>
-                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-foreground">{lead.value}</p>
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        lead.stage === 'New' ? 'bg-blue-100 text-blue-800' :
-                        lead.stage === 'Prospect' ? 'bg-yellow-100 text-yellow-800' :
-                        lead.stage === 'Negotiation' ? 'bg-orange-100 text-orange-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {lead.stage}
-                      </span>
-                      <span className={`w-2 h-2 rounded-full ${
-                        lead.priority === 'high' ? 'bg-red-500' :
-                        lead.priority === 'medium' ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}></span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Top Performers */}
+        {/* Pipeline Value */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-primary" />
-              Top Performers
+              <DollarSign className="w-5 h-5 text-primary" />
+              Pipeline Value
             </CardTitle>
-            <CardDescription>This month's best performers</CardDescription>
+            <CardDescription>Total value of active leads</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topPerformers.map((performer, index) => (
-                <div key={performer.name} className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{performer.name}</p>
-                    <p className="text-sm text-muted-foreground">{performer.deals} deals</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-foreground">{performer.revenue}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center py-8">
+              <p className="text-4xl font-bold text-primary">
+                ${dashboardData?.pipeline_value.toLocaleString() || "0"}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Across all active leads
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -157,21 +230,31 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { stage: "New", count: 0, value: "$0", color: "bg-blue-500" },
-              { stage: "Prospect", count: 0, value: "$0", color: "bg-yellow-500" },
-              { stage: "Negotiation", count: 0, value: "$0", color: "bg-orange-500" },
-              { stage: "Won", count: 0, value: "$0", color: "bg-green-500" },
-              { stage: "Lost", count: 0, value: "$0", color: "bg-red-500" },
-            ].map((stage) => (
-              <div key={stage.stage} className="text-center p-4 rounded-lg border border-border">
-                <div className={`w-12 h-12 ${stage.color} rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold`}>
+            {leadsByStage.map((stage) => (
+              <div
+                key={stage.stage}
+                className="text-center p-4 rounded-lg border border-border"
+              >
+                <div
+                  className={`w-12 h-12 ${
+                    stageColorMap[stage.stage] || "bg-gray-500"
+                  } rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold`}
+                >
                   {stage.count}
                 </div>
-                <h3 className="font-medium text-foreground">{stage.stage}</h3>
-                <p className="text-sm text-muted-foreground">{stage.value}</p>
+                <h3 className="font-medium text-foreground">
+                  {stageDisplayMap[stage.stage] || stage.stage}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  ${parseFloat(stage.value).toLocaleString()}
+                </p>
               </div>
             ))}
+            {leadsByStage.length === 0 && (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No pipeline data available
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

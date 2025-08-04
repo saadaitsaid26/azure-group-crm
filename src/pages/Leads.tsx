@@ -3,9 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { MoreHorizontal, DollarSign, User, Building, Search, ChevronLeft, ChevronRight, Package } from "lucide-react";
+import {
+  MoreHorizontal,
+  DollarSign,
+  User,
+  Building,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Package,
+  Edit,
+  Trash2,
+} from "lucide-react";
 import AddLeadDialog from "@/components/forms/AddLeadDialog";
-import { useLeads, useLeadStats, useUpdateLead } from "@/api/leads";
+import EditLeadDialog from "@/components/forms/EditLeadDialog";
+import {
+  useLeads,
+  useLeadStats,
+  useUpdateLead,
+  useDeleteLead,
+} from "@/api/leads";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import EmptyState from "@/components/EmptyState";
 import { useToast } from "@/hooks/use-toast";
@@ -42,13 +59,19 @@ export default function Leads() {
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(10);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<LeadType | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverStage, setHoverStage] = useState<string | null>(null);
   // Optimistic stage changes while awaiting server
   const [pendingStage, setPendingStage] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
-  const { data: leadsData, isLoading, error } = useLeads({
+  const {
+    data: leadsData,
+    isLoading,
+    error,
+  } = useLeads({
     q: searchQuery || undefined,
     stage: stageFilter || undefined,
     priority: priorityFilter || undefined,
@@ -57,6 +80,7 @@ export default function Leads() {
   });
   const { data: stats } = useLeadStats();
   const updateLead = useUpdateLead();
+  const deleteLead = useDeleteLead();
 
   const leads = leadsData?.results || [];
   const totalCount = leadsData?.count ?? 0;
@@ -86,24 +110,61 @@ export default function Leads() {
   }, [leadsWithPending]);
 
   const calculateStageTotal = (stageLeads: typeof leads) =>
-    stageLeads.reduce((total, lead) => total + (parseFloat(lead.value || "0") || 0), 0);
+    stageLeads.reduce(
+      (total, lead) => total + (parseFloat(lead.value || "0") || 0),
+      0
+    );
+
+  const handleEditLead = (lead: LeadType) => {
+    setEditingLead(lead);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteLead = async (lead: LeadType) => {
+    if (!confirm(`Are you sure you want to delete "${lead.title}"?`)) return;
+
+    try {
+      await deleteLead.mutateAsync(lead.id);
+      toast({
+        title: "Success",
+        description: "Lead deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.detail || "Failed to delete lead",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) return <LoadingSpinner />;
   if (error)
     return (
       <div className="p-6">
-        <EmptyState icon={Package} title="Error loading leads" description="Please try again." />
+        <EmptyState
+          icon={Package}
+          title="Error loading leads"
+          description="Please try again."
+        />
       </div>
     );
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Lead Pipeline</h1>
-          <p className="text-muted-foreground">Manage your sales pipeline and track lead progress</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            Lead Pipeline
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Manage your sales pipeline and track lead progress
+          </p>
         </div>
-        <Button className="bg-gradient-primary hover:opacity-90" onClick={() => setDialogOpen(true)}>
+        <Button
+          className="bg-gradient-primary hover:opacity-90 w-full sm:w-auto"
+          onClick={() => setDialogOpen(true)}
+        >
           Add New Lead
         </Button>
       </div>
@@ -112,7 +173,9 @@ export default function Leads() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Leads
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -120,26 +183,38 @@ export default function Leads() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Value</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Value
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${parseFloat(stats.total_value || "0").toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                ${parseFloat(stats.total_value || "0").toLocaleString()}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Average Value</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Average Value
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${parseFloat(stats.average_value || "0").toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                ${parseFloat(stats.average_value || "0").toLocaleString()}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Won This Month</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Won This Month
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.by_stage.won || 0}</div>
+              <div className="text-2xl font-bold">
+                {stats.by_stage.won || 0}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -196,23 +271,31 @@ export default function Leads() {
       ) : null}
 
       {!leads.length && searchQuery ? (
-        <EmptyState icon={Package} title="No leads found" description={`No leads match "${searchQuery}"`} />
+        <EmptyState
+          icon={Package}
+          title="No leads found"
+          description={`No leads match "${searchQuery}"`}
+        />
       ) : null}
 
       {/* Pipeline board */}
       {leads.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 overflow-x-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-6">
           {Object.entries(stageConfig).map(([stageKey, stage]) => {
             const stageLeads = leadsByStage[stageKey] || [];
             const total = calculateStageTotal(stageLeads);
 
-            const handleDragOver: React.DragEventHandler<HTMLDivElement> = (e) => {
+            const handleDragOver: React.DragEventHandler<HTMLDivElement> = (
+              e
+            ) => {
               // Allow dropping by preventing default
               e.preventDefault();
               setHoverStage(stageKey);
             };
 
-            const handleDrop: React.DragEventHandler<HTMLDivElement> = async (e) => {
+            const handleDrop: React.DragEventHandler<HTMLDivElement> = async (
+              e
+            ) => {
               e.preventDefault();
               setHoverStage(null);
               const leadId = e.dataTransfer.getData("text/plain") || draggingId;
@@ -226,8 +309,14 @@ export default function Leads() {
               // Optimistic update
               setPendingStage((prev) => ({ ...prev, [leadId]: stageKey }));
               try {
-                await updateLead.mutateAsync({ id: leadId, data: { stage: stageKey as Stage } });
-                toast({ title: "Lead moved", description: `Moved to ${stage.title}` });
+                await updateLead.mutateAsync({
+                  id: leadId,
+                  data: { stage: stageKey as Stage },
+                });
+                toast({
+                  title: "Lead moved",
+                  description: `Moved to ${stage.title}`,
+                });
               } catch (err: any) {
                 // Revert on error
                 setPendingStage((prev) => {
@@ -235,33 +324,55 @@ export default function Leads() {
                   delete copy[leadId];
                   return copy;
                 });
-                toast({ title: "Move failed", description: err?.message || "Could not update stage" });
+                toast({
+                  title: "Move failed",
+                  description: err?.message || "Could not update stage",
+                });
               } finally {
                 setDraggingId(null);
               }
             };
 
             return (
-              <Card key={stageKey} className={`min-w-72 ${hoverStage === stageKey ? "ring-2 ring-offset-2 ring-primary/40" : ""}`}>
+              <Card
+                key={stageKey}
+                className={`${
+                  hoverStage === stageKey
+                    ? "ring-2 ring-offset-2 ring-primary/40"
+                    : ""
+                }`}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: stage.color }} />
-                      <span>{stage.title}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: stage.color }}
+                      />
+                      <span className="whitespace-nowrap">{stage.title}</span>
                       <Badge variant="secondary" className="text-xs">
                         {stageLeads.length}
                       </Badge>
                     </div>
-                    <div className="text-sm font-semibold text-muted-foreground">${total.toLocaleString()}</div>
+                    <div className="text-sm font-semibold text-muted-foreground whitespace-nowrap ml-2">
+                      ${total.toLocaleString()}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent
-                  className={`space-y-3 min-h-16 ${hoverStage === stageKey ? "bg-muted/40" : ""}`}
+                  className={`space-y-3 min-h-20 ${
+                    hoverStage === stageKey ? "bg-muted/40" : ""
+                  }`}
                   onDragOver={handleDragOver}
                   onDragEnter={() => setHoverStage(stageKey)}
                   onDragLeave={(e) => {
                     // Avoid flicker when moving within the same column
-                    if ((e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) return;
+                    if (
+                      (e.currentTarget as HTMLElement).contains(
+                        e.relatedTarget as Node
+                      )
+                    )
+                      return;
                     setHoverStage(null);
                   }}
                   onDrop={handleDrop}
@@ -271,7 +382,9 @@ export default function Leads() {
                   {stageLeads.map((lead) => (
                     <Card
                       key={lead.id}
-                      className={`p-4 border-l-4 hover:shadow-sm transition-shadow ${draggingId === lead.id ? "opacity-60" : ""}`}
+                      className={`p-3 md:p-4 border-l-4 hover:shadow-sm transition-shadow ${
+                        draggingId === lead.id ? "opacity-60" : ""
+                      }`}
                       style={{ borderLeftColor: stage.color }}
                       draggable
                       onDragStart={(e) => {
@@ -286,36 +399,73 @@ export default function Leads() {
                       role="listitem"
                       aria-grabbed={draggingId === lead.id}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2">
-                          <h3 className="font-medium text-sm text-foreground leading-tight">{lead.title}</h3>
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <h3 className="font-medium text-sm text-foreground leading-tight break-words">
+                            {lead.title}
+                          </h3>
                           <div className="space-y-1 text-xs text-muted-foreground">
                             {lead.organization_name && (
                               <div className="flex items-center gap-2">
-                                <Building className="w-3 h-3" />
-                                <span>{lead.organization_name}</span>
+                                <Building className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {lead.organization_name}
+                                </span>
                               </div>
                             )}
                             {lead.contact_name && (
                               <div className="flex items-center gap-2">
-                                <User className="w-3 h-3" />
-                                <span>{lead.contact_name}</span>
+                                <User className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {lead.contact_name}
+                                </span>
                               </div>
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-xs">
-                            <div className={`w-2 h-2 rounded-full ${priorityColor(lead.priority)}`}></div>
-                            <span className="text-muted-foreground capitalize">{lead.priority} priority</span>
+                            <div
+                              className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityColor(
+                                lead.priority
+                              )}`}
+                            ></div>
+                            <span className="text-muted-foreground capitalize">
+                              {lead.priority} priority
+                            </span>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1 justify-end">
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto gap-2">
+                          <div className="flex items-center gap-1">
                             <DollarSign className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-semibold">{parseFloat(lead.value || "0").toLocaleString()}</span>
+                            <span className="font-semibold text-sm">
+                              {parseFloat(lead.value || "0").toLocaleString()}
+                            </span>
                           </div>
-                          <Button variant="ghost" size="sm" className="w-6 h-6 p-0 mt-2" aria-label="More options">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-8 h-8 p-0 touch-manipulation"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditLead(lead);
+                              }}
+                              aria-label="Edit lead"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 touch-manipulation"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteLead(lead);
+                              }}
+                              aria-label="Delete lead"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -328,8 +478,8 @@ export default function Leads() {
       )}
 
       {/* Pagination */}
-      <div className="flex items-center justify-between pt-2">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        <div className="text-xs sm:text-sm text-muted-foreground">
           Page {page} of {totalPages} • {totalCount} leads
         </div>
         <div className="flex items-center gap-2">
@@ -338,6 +488,7 @@ export default function Leads() {
             size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
+            className="touch-manipulation"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -346,13 +497,24 @@ export default function Leads() {
             size="sm"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
+            className="touch-manipulation"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      <AddLeadDialog open={dialogOpen} onOpenChange={setDialogOpen} onSuccess={() => setDialogOpen(false)} />
+      <AddLeadDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={() => setDialogOpen(false)}
+      />
+      <EditLeadDialog
+        lead={editingLead}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={() => setEditDialogOpen(false)}
+      />
     </div>
   );
 }

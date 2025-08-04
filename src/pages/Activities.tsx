@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Phone, Mail, Calendar, FileText, MessageSquare, CheckCircle2, Circle, AlertTriangle, Package, ChevronLeft, ChevronRight } from "lucide-react";
-import { useActivities, useActivityStats, useToggleActivityDone, useOverdueActivities, useUpcomingActivities } from "@/api/activities";
+import { Search, Plus, Phone, Mail, Calendar, FileText, MessageSquare, CheckCircle2, Circle, AlertTriangle, Package, ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { useActivities, useActivityStats, useToggleActivityDone, useDeleteActivity, useOverdueActivities, useUpcomingActivities } from "@/api/activities";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import EmptyState from "@/components/EmptyState";
 import AddActivityDialog from "@/components/forms/AddActivityDialog";
+import EditActivityDialog from "@/components/forms/EditActivityDialog";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow, format, parseISO } from "date-fns";
+import type { Activity } from "@/schemas/activity.schema";
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -37,15 +39,17 @@ const getTypeBadgeColor = (type: string) => {
 export default function Activities() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { data: activitiesData, isLoading, error } = useActivities({
     q: searchQuery || undefined,
-    type: typeFilter || undefined,
+    type: typeFilter === "all" ? undefined : typeFilter || undefined,
     is_done: statusFilter === "done" ? true : statusFilter === "pending" ? false : undefined,
     page,
     page_size: pageSize,
@@ -54,6 +58,7 @@ export default function Activities() {
   const { data: upcomingData } = useUpcomingActivities();
   const { data: overdueData } = useOverdueActivities();
   const toggleDone = useToggleActivityDone();
+  const deleteActivity = useDeleteActivity();
 
   const handleToggleDone = async (id: string, currentStatus: boolean) => {
     try {
@@ -61,6 +66,30 @@ export default function Activities() {
       toast({ title: "Success", description: `Activity marked as ${currentStatus ? "pending" : "done"}` });
     } catch (error: any) {
       toast({ title: "Error", description: error?.response?.data?.detail || "Failed to update activity", variant: "destructive" });
+    }
+  };
+
+  const handleEditActivity = (activity: Activity) => {
+    setEditingActivity(activity);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteActivity = async (activity: Activity) => {
+    const activityTitle = activity.title || `${activity.type} activity`;
+    if (!confirm(`Are you sure you want to delete "${activityTitle}"?`)) return;
+
+    try {
+      await deleteActivity.mutateAsync(activity.id);
+      toast({
+        title: "Success",
+        description: "Activity deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.detail || "Failed to delete activity",
+        variant: "destructive",
+      });
     }
   };
 
@@ -135,7 +164,7 @@ export default function Activities() {
             <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
               <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="All Types" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="call">Call</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
                 <SelectItem value="meeting">Meeting</SelectItem>
@@ -146,7 +175,7 @@ export default function Activities() {
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="All Status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="done">Completed</SelectItem>
               </SelectContent>
@@ -198,9 +227,29 @@ export default function Activities() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={act.is_done ? 'default' : 'secondary'} className="cursor-pointer" onClick={() => handleToggleDone(act.id, act.is_done)}>
+                        <Badge 
+                          variant={act.is_done ? 'default' : 'secondary'} 
+                          className="cursor-pointer" 
+                          onClick={() => handleToggleDone(act.id, act.is_done)}
+                        >
                           {act.is_done ? 'Done' : 'Mark Done'}
                         </Badge>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-8 h-8 p-0" 
+                          onClick={() => handleEditActivity(act)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" 
+                          onClick={() => handleDeleteActivity(act)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -221,6 +270,12 @@ export default function Activities() {
       </Card>
 
       <AddActivityDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={() => { setShowAddDialog(false); }} />
+      <EditActivityDialog 
+        activity={editingActivity} 
+        open={editDialogOpen} 
+        onOpenChange={setEditDialogOpen} 
+        onSuccess={() => setEditDialogOpen(false)} 
+      />
     </div>
   );
 }

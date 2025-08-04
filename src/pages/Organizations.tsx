@@ -3,9 +3,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Download, MoreHorizontal, Building, Users, Mail, Globe, Loader2 } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Download,
+  MoreHorizontal,
+  Building,
+  Users,
+  Mail,
+  Globe,
+  Loader2,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import AddOrganizationDialog from "@/components/forms/AddOrganizationDialog";
-import { useOrganizations, useOrganizationStats } from "@/api/organizations";
+import EditOrganizationDialog from "@/components/forms/EditOrganizationDialog";
+import {
+  useOrganizations,
+  useOrganizationStats,
+  useDeleteOrganization,
+  type Organization,
+} from "@/api/organizations";
 import { useToast } from "@/hooks/use-toast";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import EmptyState from "@/components/EmptyState";
@@ -39,17 +63,22 @@ const getTypeColor = (type: string) => {
 export default function Organizations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingOrganization, setEditingOrganization] =
+    useState<Organization | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { toast } = useToast();
-  
+
   // Fetch organizations with search query
   const { data, isLoading, isError, error } = useOrganizations({
     q: searchQuery || undefined,
     page_size: 100,
   });
-  
+
   // Fetch stats
   const { data: stats } = useOrganizationStats();
-  
+
+  const deleteMutation = useDeleteOrganization();
+
   const organizations = data?.results || [];
   const totalCount = data?.count || 0;
 
@@ -59,6 +88,31 @@ export default function Organizations() {
       title: "Success",
       description: "Organization created successfully",
     });
+  };
+
+  const handleEditOrganization = (organization: Organization) => {
+    setEditingOrganization(organization);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteOrganization = async (organization: Organization) => {
+    if (!confirm(`Are you sure you want to delete "${organization.name}"?`))
+      return;
+
+    try {
+      await deleteMutation.mutateAsync(organization.id);
+      toast({
+        title: "Success",
+        description: "Organization deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.detail || "Failed to delete organization",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -74,7 +128,9 @@ export default function Organizations() {
       <div className="p-6">
         <Card>
           <CardContent className="p-6">
-            <p className="text-destructive">Error loading organizations: {error?.message}</p>
+            <p className="text-destructive">
+              Error loading organizations: {error?.message}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -87,20 +143,29 @@ export default function Organizations() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Organizations</h1>
-          <p className="text-muted-foreground">Manage your business relationships and accounts</p>
+          <p className="text-muted-foreground">
+            Manage your business relationships and accounts
+          </p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className="flex items-center gap-2">
             <Download className="w-4 h-4" />
             Export
           </Button>
-          <Button className="bg-gradient-primary hover:opacity-90" onClick={() => setDialogOpen(true)}>
+          <Button
+            className="bg-gradient-primary hover:opacity-90"
+            onClick={() => setDialogOpen(true)}
+          >
             Add Organization
           </Button>
         </div>
       </div>
 
-      <AddOrganizationDialog open={dialogOpen} onOpenChange={setDialogOpen} onSuccess={handleSuccess} />
+      <AddOrganizationDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={handleSuccess}
+      />
 
       {/* Filters */}
       <Card>
@@ -133,8 +198,12 @@ export default function Organizations() {
                 <Building className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{totalCount}</p>
-                <p className="text-sm text-muted-foreground">Total Organizations</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {totalCount}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Total Organizations
+                </p>
               </div>
             </div>
           </CardContent>
@@ -146,7 +215,9 @@ export default function Organizations() {
                 <Building className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.by_status?.active || 0}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {(stats as any)?.by_status?.active || 0}
+                </p>
                 <p className="text-sm text-muted-foreground">Active</p>
               </div>
             </div>
@@ -160,7 +231,10 @@ export default function Organizations() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">
-                  {organizations.reduce((sum, o) => sum + (o.contacts_count || 0), 0)}
+                  {organizations.reduce(
+                    (sum, o) => sum + (o.contacts_count || 0),
+                    0
+                  )}
                 </p>
                 <p className="text-sm text-muted-foreground">Total Contacts</p>
               </div>
@@ -174,7 +248,9 @@ export default function Organizations() {
                 <Globe className="w-5 h-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats?.by_type?.Enterprise || 0}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {(stats as any)?.by_type?.Enterprise || 0}
+                </p>
                 <p className="text-sm text-muted-foreground">Enterprise</p>
               </div>
             </div>
@@ -190,13 +266,18 @@ export default function Organizations() {
         <CardContent>
           <div className="space-y-4">
             {organizations.map((org) => (
-              <div key={org.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors">
+              <div
+                key={org.id}
+                className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors"
+              >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center text-white font-semibold text-lg">
                     {org.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-foreground">{org.name}</h3>
+                    <h3 className="font-semibold text-foreground">
+                      {org.name}
+                    </h3>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       {org.industry && <span>{org.industry}</span>}
                       {org.email && (
@@ -209,20 +290,28 @@ export default function Organizations() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">{org.contacts_count} contact{org.contacts_count !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {org.contacts_count} contact
+                      {org.contacts_count !== 1 ? "s" : ""}
+                    </p>
                     {org.website && (
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Globe className="w-3 h-3" />
-                        <a href={org.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        <a
+                          href={org.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline"
+                        >
                           Website
                         </a>
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-col gap-2">
                     <Badge className={getStatusColor(org.status)}>
                       {org.status}
@@ -233,10 +322,29 @@ export default function Organizations() {
                       </Badge>
                     )}
                   </div>
-                  
-                  <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => handleEditOrganization(org)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteOrganization(org)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}
@@ -246,13 +354,24 @@ export default function Organizations() {
             <EmptyState
               icon={Building}
               title="No organizations found"
-              description={searchQuery ? 'Try adjusting your search criteria' : 'Get started by adding your first organization'}
+              description={
+                searchQuery
+                  ? "Try adjusting your search criteria"
+                  : "Get started by adding your first organization"
+              }
               actionLabel="Add Organization"
               onAction={() => setDialogOpen(true)}
             />
           )}
         </CardContent>
       </Card>
+
+      <EditOrganizationDialog
+        organization={editingOrganization}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={() => setEditDialogOpen(false)}
+      />
     </div>
   );
 }
