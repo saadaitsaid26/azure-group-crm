@@ -2,9 +2,9 @@ import { z } from "zod";
 
 // Activity schema for forms (creating/updating)
 export const activityFormSchema = z.object({
-  lead: z.string().uuid().optional().nullable(),
-  contact: z.string().uuid().optional().nullable(),
-  organization: z.string().uuid().optional().nullable(),
+  lead: z.union([z.string().uuid(), z.literal("none"), z.null(), z.undefined()]).optional().nullable(),
+  contact: z.union([z.string().uuid(), z.literal("none"), z.null(), z.undefined()]).optional().nullable(),
+  organization: z.union([z.string().uuid(), z.literal("none"), z.null(), z.undefined()]).optional().nullable(),
   type: z.enum(["call", "email", "meeting", "task", "note"]),
   title: z.string().max(200).optional(),
   comment: z.string().optional(),
@@ -13,8 +13,11 @@ export const activityFormSchema = z.object({
   schedule_to: z.string().optional().nullable(),
 }).refine(
   (data) => {
-    // At least one entity reference required
-    return data.lead || data.contact || data.organization;
+    // At least one entity reference required (excluding "none" values)
+    const hasLead = data.lead && data.lead !== "none";
+    const hasContact = data.contact && data.contact !== "none";
+    const hasOrganization = data.organization && data.organization !== "none";
+    return hasLead || hasContact || hasOrganization;
   },
   {
     message: "Activity must be associated with at least one of: lead, contact, or organization",
