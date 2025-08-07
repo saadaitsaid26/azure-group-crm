@@ -71,7 +71,9 @@ export default function Header() {
               <Button variant="ghost" size="sm" className="gap-2">
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    {user ? `${user.firstName[0]}${user.lastName[0]}` : "U"}
+                    {user?.firstName && user?.lastName 
+                      ? `${user.firstName[0]}${user.lastName[0]}` 
+                      : "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>

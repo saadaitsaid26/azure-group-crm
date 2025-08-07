@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // On mount, try to fetch user data (cookies will be sent automatically)
+    // Note: A 401 response is expected and normal when user is not logged in
     fetchUser();
   }, []);
 
@@ -39,8 +40,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Backend will validate the httpOnly cookie and return user data
       const userData = await apiClient.get<User>("/auth/me");
       setUser(userData);
-    } catch (error) {
+    } catch (error: any) {
       // User is not authenticated or session expired
+      // This is expected behavior when not logged in, so silently handle it
+      // Don't log anything for 401 errors on auth check
+      if (error?.message !== "Unauthorized") {
+        console.error("Error fetching user:", error);
+      }
       setUser(null);
     } finally {
       setLoading(false);

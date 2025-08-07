@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Building2, 
-  Target, 
-  Activity, 
-  FileText, 
-  Package, 
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Target,
+  Activity,
+  FileText,
+  Package,
   Settings,
   ChevronRight,
-  Shield
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +32,7 @@ export default function Sidebar() {
   const { user, isAdmin } = useAuth();
 
   return (
-    <div 
+    <div
       className={cn(
         "bg-sidebar border-r border-sidebar-border transition-all duration-300 flex flex-col h-screen",
         collapsed ? "w-16" : "w-64"
@@ -47,7 +47,9 @@ export default function Sidebar() {
                 <span className="text-white font-bold text-sm">AG</span>
               </div>
               <div>
-                <h1 className="font-semibold text-sidebar-foreground">Azure Group</h1>
+                <h1 className="font-semibold text-sidebar-foreground">
+                  Azure Group
+                </h1>
                 <p className="text-xs text-sidebar-foreground/60">CRM System</p>
               </div>
             </div>
@@ -56,7 +58,7 @@ export default function Sidebar() {
             onClick={() => setCollapsed(!collapsed)}
             className="p-1 hover:bg-sidebar-accent rounded-md transition-colors"
           >
-            <ChevronRight 
+            <ChevronRight
               className={cn(
                 "w-4 h-4 text-sidebar-foreground transition-transform",
                 collapsed ? "rotate-0" : "rotate-180"
@@ -74,10 +76,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               to={item.href}
-              className={cn(
-                "sidebar-nav",
-                isActive && "active"
-              )}
+              className={cn("sidebar-nav", isActive && "active")}
               title={collapsed ? item.name : undefined}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -85,7 +84,7 @@ export default function Sidebar() {
             </Link>
           );
         })}
-        
+
         {/* Admin Link */}
         {isAdmin && (
           <Link
@@ -101,25 +100,6 @@ export default function Sidebar() {
           </Link>
         )}
       </nav>
-
-      {/* User Profile */}
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-primary-foreground font-semibold text-sm">
-              {user ? `${user.firstName[0]}${user.lastName[0]}` : "U"}
-            </span>
-          </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user ? `${user.firstName} ${user.lastName}` : "User"}
-              </p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">{user?.role || "User"}</p>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
