@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   db:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: crm_db
     environment:
       POSTGRES_DB: crm
@@ -60,7 +58,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8080,http://localhost:3000
       - CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://localhost:8080,http://localhost:3000
-      - COOKIE_DOMAIN=localhost
+      - COOKIE_DOMAIN=
       - DJANGO_SETTINGS_MODULE=crm_backend.settings.dev
     depends_on:
       db:
