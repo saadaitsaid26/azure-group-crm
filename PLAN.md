@@ -238,7 +238,7 @@ Goal: Basic RBAC and reference data management.
 
 Deliverables
 
-- Backend: Users CRUD (admin only), simple roles via Django Groups or Role model; reference tables for pipelines/sources/types
+- Backend: Users CRUD (admin o  nly), simple roles via Django Groups or Role model; reference tables for pipelines/sources/types
 - Frontend: Admin pages wired with server data
 
 Prompt to assistant
