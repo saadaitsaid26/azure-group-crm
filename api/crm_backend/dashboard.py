@@ -1,30 +1,4 @@
 """
-CRM dashboard API endpoints for authenticated users.
-This module exposes two read-only views that aggregate and return dashboard
-metrics for a CRM application:
-1) dashboard_stats(request)
-    Returns a comprehensive analytics payload with:
-    - Revenue KPIs from accepted quotes (total, current month, month-over-month change)
-    - Lead KPIs (active leads, new leads this month, monthly change)
-    - Contact KPIs (total contacts, new contacts this month, monthly change)
-    - Conversion KPIs (overall conversion, monthly conversion, monthly change)
-    - Pipeline value (sum of values for non-won/non-lost leads)
-    - Recent activity feed (latest 10 activities with related lead/contact/user info)
-    - Lead distribution by stage (count and summed value)
-    - Revenue trend grouped by month for the recent period
-    Implementation notes:
-    - Quote `updated_at` is used as a proxy for quote acceptance timing.
-    - Percentage changes handle zero baselines safely to avoid division errors.
-    - Decimal aggregates are converted to float for JSON serialization.
-2) dashboard_summary(request)
-    Returns lightweight dashboard card counters:
-    - Total organizations
-    - Total contacts
-    - Total leads
-    - Active leads
-    - Total quotes
-    - Pending activities
-Both endpoints are protected with IsAuthenticated and return DRF JSON responses.
 Dashboard API views for CRM analytics and statistics.
 """
 from rest_framework.decorators import api_view, permission_classes
