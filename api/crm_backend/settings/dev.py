@@ -18,24 +18,4 @@ INTERNAL_IPS = [
 if not os.getenv("CORS_ALLOWED_ORIGINS"):
     CORS_ALLOW_ALL_ORIGINS = True
 
-# Logging configuration for development
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-        },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO",
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-    },
-}
+# Logging is configured in base.py - no override needed for development

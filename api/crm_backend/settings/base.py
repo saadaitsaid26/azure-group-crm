@@ -225,3 +225,206 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
 }
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+# Smart, centralized logging configuration for all environments
+# Automatically adapts based on DEBUG setting and environment variables
+
+# Ensure logs directory exists
+LOGS_DIR = BASE_DIR / "logs"
+LOGS_DIR.mkdir(exist_ok=True)
+
+# Determine log level from environment or DEBUG setting
+LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG" if DEBUG else "INFO")
+
+# Determine if we should log to files (production) or just console (development)
+LOG_TO_FILE = os.getenv("LOG_TO_FILE", "True" if not DEBUG else "False") == "True"
+
+# Configure logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    # ========================================================================
+    # FORMATTERS - Define how log messages are formatted
+    # ========================================================================
+    "formatters": {
+        # Detailed formatter for file logs (production)
+        "verbose": {
+            "format": "[{levelname}] {asctime} | {name} | {module}.{funcName}:{lineno} | Process:{process:d} Thread:{thread:d} | {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        # Standard formatter for console (development)
+        "standard": {
+            "format": "[{levelname}] {asctime} | {name} | {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        # Simple formatter for console in production
+        "simple": {
+            "format": "[{levelname}] {asctime} | {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+    },
+    # ========================================================================
+    # FILTERS - Control which log records are processed
+    # ========================================================================
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+    },
+    # ========================================================================
+    # HANDLERS - Define where and how logs are output
+    # ========================================================================
+    "handlers": {
+        # Console handler for development (uses standard formatter)
+        "console_dev": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+            "filters": ["require_debug_true"],
+        },
+        # Console handler for production (uses simple formatter)
+        "console_prod": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "filters": ["require_debug_false"],
+        },
+        # File handler for all logs (rotating)
+        "file_all": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django.log",
+            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+        },
+        # File handler for errors only (rotating)
+        "file_errors": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django_errors.log",
+            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+        },
+        # File handler for debug logs (rotating, only in DEBUG mode)
+        "file_debug": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django_debug.log",
+            "maxBytes": 1024 * 1024 * 5,  # 5 MB
+            "backupCount": 3,
+            "formatter": "verbose",
+            "filters": ["require_debug_true"],
+        },
+        # Null handler (discards logs)
+        "null": {
+            "class": "logging.NullHandler",
+        },
+    },
+    # ========================================================================
+    # LOGGERS - Configure logging for specific modules/apps
+    # ========================================================================
+    "loggers": {
+        # Django framework logger
+        "django": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Django request/response logger (catches 4xx, 5xx errors)
+        "django.request": {
+            "handlers": ["console_dev", "console_prod"] + (["file_errors"] if LOG_TO_FILE else []),
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Django database query logger (useful for debugging slow queries)
+        "django.db.backends": {
+            "handlers": ["console_dev", "file_debug"] if DEBUG else ["null"],
+            "level": "DEBUG" if DEBUG and os.getenv("LOG_SQL", "False") == "True" else "INFO",
+            "propagate": False,
+        },
+        # Django security logger
+        "django.security": {
+            "handlers": ["console_dev", "console_prod"] + (["file_errors"] if LOG_TO_FILE else []),
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Django server logger
+        "django.server": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all"] if LOG_TO_FILE else []),
+            "level": "INFO",
+            "propagate": False,
+        },
+        # CRM Backend logger
+        "crm_backend": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Users app logger
+        "users": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Organizations app logger
+        "organizations": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Contacts app logger
+        "contacts": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Leads app logger
+        "leads": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Activities app logger
+        "activities": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Products app logger
+        "products": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Quote Items app logger
+        "quote_items": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # Reference Data app logger
+        "reference_data": {
+            "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+    # ========================================================================
+    # ROOT LOGGER - Catches all unhandled logs
+    # ========================================================================
+    "root": {
+        "handlers": ["console_dev", "console_prod"] + (["file_all", "file_errors"] if LOG_TO_FILE else []),
+        "level": LOG_LEVEL,
+    },
+}
