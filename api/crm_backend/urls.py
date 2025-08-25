@@ -26,7 +26,7 @@ from drf_spectacular.views import (
 )
 from .health import health_check
 from .dashboard import dashboard_stats, dashboard_summary
-from users.urls import user_management_urls
+from users.urls import user_management_urls, groups_urls, permissions_urls
 
 urlpatterns = [
     # Health check
@@ -42,6 +42,8 @@ urlpatterns = [
     path("api/v1/dashboard/summary/", dashboard_summary, name="dashboard_summary"),
     path("api/v1/auth/", include("users.urls", namespace="users")),
     path("api/v1/users/", include(user_management_urls)),  # User management (admin only)
+    path("api/v1/groups/", include(groups_urls)),  # Groups management (admin only)
+    path("api/v1/permissions/", include(permissions_urls)),  # Permissions listing (admin only)
     path("api/v1/organizations/", include("organizations.urls")),
     path("api/v1/contacts/", include("contacts.urls")),
     path("api/v1/leads/", include("leads.urls")),
