@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 
 // Types
+export interface GroupBasic {
+  id: number;
+  name: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -9,6 +14,7 @@ export interface User {
   last_name: string;
   role: 'admin' | 'user';
   is_active: boolean;
+  groups: GroupBasic[];
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +25,7 @@ export interface UserFormData {
   first_name: string;
   last_name: string;
   role: 'admin' | 'user';
+  group_ids?: number[];
 }
 
 export interface UserFilters {
@@ -38,6 +45,42 @@ export interface UserStats {
   by_status: {
     active: number;
     inactive: number;
+  };
+}
+
+export interface DashboardStats {
+  users: {
+    total: number;
+    active: number;
+    admins: number;
+    users: number;
+  };
+  roles: {
+    total: number;
+    with_users: number;
+  };
+  reference_data: {
+    pipeline_stages: number;
+    lead_sources: number;
+    activity_types: number;
+    contact_types: number;
+  };
+  crm: {
+    total_leads: number;
+    total_contacts: number;
+    total_organizations: number;
+    total_activities: number;
+  };
+  recent_activity: {
+    new_leads: number;
+    new_contacts: number;
+    new_organizations: number;
+    new_activities: number;
+    new_users: number;
+  };
+  system_health: {
+    active_users_30d: number;
+    total_users: number;
   };
 }
 
@@ -97,6 +140,16 @@ export function useUserStats(filters?: UserFilters) {
       if (filters?.is_active !== undefined) params.append('is_active', String(filters.is_active));
       
       const response = await apiClient.get<UserStats>(`/users/stats/?${params.toString()}`);
+      return response;
+    },
+  });
+}
+
+export function useDashboardStats() {
+  return useQuery({
+    queryKey: [...userKeys.all, 'dashboard-stats'] as const,
+    queryFn: async () => {
+      const response = await apiClient.get<DashboardStats>('/users/dashboard_stats/');
       return response;
     },
   });
