@@ -259,3 +259,76 @@ class UserViewSet(viewsets.ModelViewSet):
                 "inactive": inactive_count,
             },
         })
+    
+    @action(detail=False, methods=["get"])
+    def dashboard_stats(self, request):
+        """Get comprehensive dashboard statistics."""
+        from django.utils import timezone
+        from datetime import timedelta
+        from django.contrib.auth.models import Group
+        from reference_data.models import PipelineStage, LeadSource, ActivityType, ContactType
+        from leads.models import Lead
+        from contacts.models import Contact
+        from organizations.models import Organization
+        from activities.models import Activity
+        
+        # User stats
+        users = User.objects.all()
+        user_stats = {
+            "total": users.count(),
+            "active": users.filter(is_active=True).count(),
+            "admins": users.filter(role="admin").count(),
+            "users": users.filter(role="user").count(),
+        }
+        
+        # Group/Role stats
+        groups = Group.objects.all()
+        role_stats = {
+            "total": groups.count(),
+            "with_users": sum(1 for g in groups if g.user_set.exists()),
+        }
+        
+        # Reference data stats
+        reference_data_stats = {
+            "pipeline_stages": PipelineStage.objects.filter(is_active=True).count(),
+            "lead_sources": LeadSource.objects.filter(is_active=True).count(),
+            "activity_types": ActivityType.objects.filter(is_active=True).count(),
+            "contact_types": ContactType.objects.filter(is_active=True).count(),
+        }
+        
+        # CRM data stats
+        crm_stats = {
+            "total_leads": Lead.objects.count(),
+            "total_contacts": Contact.objects.count(),
+            "total_organizations": Organization.objects.count(),
+            "total_activities": Activity.objects.count(),
+        }
+        
+        # Recent activity (last 7 days)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        recent_activity = {
+            "new_leads": Lead.objects.filter(created_at__gte=seven_days_ago).count(),
+            "new_contacts": Contact.objects.filter(created_at__gte=seven_days_ago).count(),
+            "new_organizations": Organization.objects.filter(created_at__gte=seven_days_ago).count(),
+            "new_activities": Activity.objects.filter(created_at__gte=seven_days_ago).count(),
+            "new_users": User.objects.filter(created_at__gte=seven_days_ago).count(),
+        }
+        
+        # System health indicators
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        system_health = {
+            "active_users_30d": User.objects.filter(
+                is_active=True,
+                last_login__gte=thirty_days_ago
+            ).count(),
+            "total_users": users.count(),
+        }
+        
+        return Response({
+            "users": user_stats,
+            "roles": role_stats,
+            "reference_data": reference_data_stats,
+            "crm": crm_stats,
+            "recent_activity": recent_activity,
+            "system_health": system_health,
+        })
