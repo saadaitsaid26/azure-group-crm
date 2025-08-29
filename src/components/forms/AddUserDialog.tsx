@@ -16,9 +16,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useCreateUser } from "@/api/users";
+import { useGroups } from "@/api/groups";
 import { toast } from "@/hooks/use-toast";
 
 const addUserSchema = z.object({
@@ -38,6 +41,7 @@ const addUserSchema = z.object({
   role: z.enum(["admin", "user"], {
     required_error: "Please select a role",
   }),
+  group_ids: z.array(z.number()).optional(),
 });
 
 type AddUserFormValues = z.infer<typeof addUserSchema>;
@@ -49,7 +53,10 @@ interface AddUserDialogProps {
 
 export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
   const createUser = useCreateUser();
+  const { data: groupsData } = useGroups();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const groups = groupsData?.results || [];
 
   const form = useForm<AddUserFormValues>({
     resolver: zodResolver(addUserSchema),
@@ -59,6 +66,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
       first_name: "",
       last_name: "",
       role: "user",
+      group_ids: [],
     },
   });
 
@@ -71,6 +79,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
         first_name: data.first_name,
         last_name: data.last_name,
         role: data.role,
+        group_ids: data.group_ids,
       });
       toast({
         title: "Success",
@@ -179,6 +188,59 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="group_ids"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel>Groups</FormLabel>
+                    <FormDescription>
+                      Select groups to assign to this user (optional)
+                    </FormDescription>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {groups.map((group) => (
+                      <FormField
+                        key={group.id}
+                        control={form.control}
+                        name="group_ids"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={group.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(group.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([
+                                          ...(field.value || []),
+                                          group.id,
+                                        ])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== group.id
+                                          )
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                {group.name}
+                              </FormLabel>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

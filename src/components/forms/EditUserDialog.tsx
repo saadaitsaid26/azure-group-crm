@@ -16,9 +16,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -29,6 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { useUpdateUser } from "@/api/users";
+import { useGroups } from "@/api/groups";
 import { toast } from "@/hooks/use-toast";
 import type { User } from "@/api/users";
 
@@ -40,6 +43,7 @@ const editUserSchema = z.object({
     required_error: "Please select a role",
   }),
   is_active: z.boolean(),
+  group_ids: z.array(z.number()).optional(),
 });
 
 type EditUserFormValues = z.infer<typeof editUserSchema>;
@@ -56,7 +60,10 @@ export function EditUserDialog({
   onOpenChange,
 }: EditUserDialogProps) {
   const updateUser = useUpdateUser();
+  const { data: groupsData } = useGroups();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const groups = groupsData?.results || [];
 
   const form = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserSchema),
@@ -66,6 +73,7 @@ export function EditUserDialog({
       last_name: user.last_name,
       role: user.role,
       is_active: user.is_active,
+      group_ids: user.groups?.map((g) => g.id) || [],
     },
   });
 
@@ -77,6 +85,7 @@ export function EditUserDialog({
       last_name: user.last_name,
       role: user.role,
       is_active: user.is_active,
+      group_ids: user.groups?.map((g) => g.id) || [],
     });
   }, [user, form]);
 
@@ -198,6 +207,59 @@ export function EditUserDialog({
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="group_ids"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel>Groups</FormLabel>
+                    <FormDescription>
+                      Select groups to assign to this user (optional)
+                    </FormDescription>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {groups.map((group) => (
+                      <FormField
+                        key={group.id}
+                        control={form.control}
+                        name="group_ids"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={group.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(group.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([
+                                          ...(field.value || []),
+                                          group.id,
+                                        ])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== group.id
+                                          )
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                {group.name}
+                              </FormLabel>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />
