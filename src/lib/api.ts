@@ -5,9 +5,51 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api/
 
 class ApiClient {
   private baseURL: string;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value?: unknown) => void;
+    reject: (reason?: any) => void;
+  }> = [];
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
+  }
+
+  /**
+   * Process queued requests after token refresh
+   */
+  private processQueue(error: any = null) {
+    this.failedQueue.forEach((promise) => {
+      if (error) {
+        promise.reject(error);
+      } else {
+        promise.resolve();
+      }
+    });
+    this.failedQueue = [];
+  }
+
+  /**
+   * Attempt to refresh the access token using the refresh token
+   */
+  private async refreshToken(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseURL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      return false;
+    }
   }
 
   private async request<T>(
@@ -28,16 +70,50 @@ class ApiClient {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Unauthorized - redirect to login
+          // Unauthorized - attempt token refresh
           // Don't redirect if already on login page or if checking auth status
-          if (window.location.pathname !== "/login" && endpoint !== "/auth/me") {
+          const isAuthCheck = endpoint === "/auth/me";
+          const isLoginPage = window.location.pathname === "/login";
+          
+          // If this is not an auth check and not on login page, try to refresh token
+          if (!isAuthCheck && !isLoginPage) {
+            // If already refreshing, queue this request
+            if (this.isRefreshing) {
+              return new Promise((resolve, reject) => {
+                this.failedQueue.push({ resolve, reject });
+              }).then(() => {
+                // Retry the original request after token refresh
+                return this.request<T>(endpoint, options);
+              });
+            }
+
+            // Try to refresh the token
+            this.isRefreshing = true;
+            const refreshed = await this.refreshToken();
+            this.isRefreshing = false;
+
+            if (refreshed) {
+              // Token refreshed successfully, retry original request
+              this.processQueue();
+              return this.request<T>(endpoint, options);
+            } else {
+              // Refresh failed, clear queue and redirect to login
+              this.processQueue(new Error("Session expired"));
+              window.location.href = "/login";
+              throw new Error("Session expired. Please login again.");
+            }
+          }
+
+          // For auth check or already on login page, just throw unauthorized
+          if (!isAuthCheck) {
             window.location.href = "/login";
           }
           const error = new Error("Unauthorized");
           // Mark the error as an auth check so we can suppress console logging
-          (error as any).isAuthCheck = endpoint === "/auth/me";
+          (error as any).isAuthCheck = isAuthCheck;
           throw error;
         }
+
         const errorData = await response.json().catch(() => ({}));
         
         // Handle different error response formats from Django REST Framework

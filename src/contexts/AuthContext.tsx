@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, ReactNode } from "react";
 import { apiClient } from "@/lib/api";
+import { clearQueryCache } from "@/lib/queryClient";
 
 export interface User {
   id: string;
@@ -14,6 +15,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -22,6 +24,7 @@ export const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: async () => {},
   logout: () => {},
+  refreshUser: async () => {},
   isAdmin: false,
 });
 
@@ -55,10 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     // Backend will set httpOnly cookie on successful login
-    const response = await apiClient.post<{ user: User }>(
-      "/auth/login",
-      { email, password }
-    );
+    const response = await apiClient.post<{ user: User }>("/auth/login", {
+      email,
+      password,
+    });
     setUser(response.user);
   };
 
@@ -71,9 +74,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout error:", error);
     } finally {
       setUser(null);
+      // Clear all React Query cache on logout
+      clearQueryCache();
       // Redirect to login page
       window.location.href = "/login";
     }
+  };
+
+  const refreshUser = async () => {
+    // Manually refresh user data (useful after profile updates)
+    await fetchUser();
   };
 
   return (
@@ -83,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         login,
         logout,
+        refreshUser,
         isAdmin: user?.role === "admin",
       }}
     >
