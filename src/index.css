@@ -216,6 +216,11 @@
     @apply bg-primary text-primary-foreground hover:bg-primary-dark hover:text-primary-foreground;
   }
 
+  /* Collapsed sidebar - center icons */
+  .sidebar-nav.collapsed {
+    @apply justify-center px-0 gap-0;
+  }
+
   /* Quick Action Grid */
   .quick-action-grid {
     @apply grid grid-cols-3 gap-2 p-4 w-64;

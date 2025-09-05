@@ -76,7 +76,11 @@ export default function Sidebar() {
             <Link
               key={item.name}
               to={item.href}
-              className={cn("sidebar-nav", isActive && "active")}
+              className={cn(
+                "sidebar-nav",
+                isActive && "active",
+                collapsed && "collapsed"
+              )}
               title={collapsed ? item.name : undefined}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -91,7 +95,8 @@ export default function Sidebar() {
             to="/admin"
             className={cn(
               "sidebar-nav",
-              location.pathname.startsWith("/admin") && "active"
+              location.pathname.startsWith("/admin") && "active",
+              collapsed && "collapsed"
             )}
             title={collapsed ? "Admin Panel" : undefined}
           >
