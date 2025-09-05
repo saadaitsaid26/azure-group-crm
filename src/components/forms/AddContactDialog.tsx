@@ -43,7 +43,6 @@ export default function AddContactDialog({
   const { data: organizationsData, isLoading: isLoadingOrganizations } =
     useOrganizations({
       page_size: 1000, // Get all organizations
-      status: "active", // Only show active organizations
     });
 
   const {
@@ -150,14 +149,19 @@ export default function AddContactDialog({
                     <SelectValue placeholder="Select a company" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">
-                      <span className="text-muted-foreground">No company</span>
-                    </SelectItem>
-                    {organizationsData?.results?.map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">No company</SelectItem>
+                    {organizationsData?.results &&
+                    organizationsData.results.length > 0 ? (
+                      organizationsData.results.map((org) => (
+                        <SelectItem key={org.id} value={org.id}>
+                          {org.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        No organizations found. Create one first.
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               )}

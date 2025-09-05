@@ -41,7 +41,7 @@ export default function EditContactDialog({
   const { toast } = useToast();
   const updateMutation = useUpdateContact();
 
-  const { data: organizationsData } = useOrganizations({ page_size: 100 });
+  const { data: organizationsData } = useOrganizations({ page_size: 1000 });
   const organizations = organizationsData?.results || [];
 
   const {
